@@ -140,13 +140,13 @@ class KonturApiReq{
 		 'company_id' => 666,
 		];
 		*/
-
-		if (is_file('../common/db_aveysov_credentials_rw.php')) 
-		{
-			require  '../common/db_aveysov_credentials_rw.php';
+		if (is_file('/home/aveysov/htdocs/common/db_credentials_sandbox_rw.php')){
+			include '/home/aveysov/htdocs/common/db_credentials_sandbox_rw.php';
 		} 
-		else {exit("No database credentials available");}
-		
+		else {
+			exit("No db_credentials_sandbox_rw.php credentials available");
+		}
+
 		if(isset($params['inn'])) {
 			$inn = $params['inn'];
 		}  else {
@@ -192,18 +192,15 @@ class KonturApiReq{
 		
 		$dbconn = pg_connect("host=$host port=5432 dbname=$db user=$user password=$pass") or die("Could not connect"."</br>");	
 		$result = pg_query($dbconn, $query);
-		if (!$result) 
-		{
+		if (!$result){
 		  echo "A DB insert error occurred.\n";
 		  pg_close($dbconn);
 		  exit;
 		}
 		$resultData = '';
-		while ($row = pg_fetch_row($result)) 
-		{
+		while ($row = pg_fetch_row($result)){
 		  $resultData = $resultData . $row[0];
 		}
-		
 		if (($this -> _apiReplyDecoded['yellow_statements'])=== true) {
 			$alarmQuery =
 			"
@@ -295,7 +292,6 @@ class KonturApiReq{
 	function apiCall ($params) {
 		$apiCallString = $this->_apiUrl . $this->_apiParams['key'] . $params['key'] . $this->_apiParams['ogrn'] . $params['ogrn'] . $this->	_apiParams['inn']  . $params['inn'];
 		$this -> _apiCallUrl = $apiCallString;
-			
 		$curl = curl_init($apiCallString);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		$curl_response = curl_exec($curl);
@@ -314,15 +310,15 @@ class KonturApiReq{
 	}	
 }
 
-
 class companiesGetKontur{
 	function getAllCompanies () {
-		if (is_file('../common/db_credentials_ro.php')) 
-		{	
-			require ('../common/db_credentials_ro.php');
+		if (is_file('/home/aveysov/htdocs/common/db_credentials_ro.php')){
+			include '/home/aveysov/htdocs/common/db_credentials_ro.php';
 		} 
-		else {exit("No ../common/db_credentials_ro.php credentials available");}
-		
+		else {
+			exit("No database credentials available");
+		}
+
 		$query =
 		"
 		SELECT 
@@ -368,13 +364,15 @@ class companiesGetKontur{
 		[
 			'monthsBack' => 12,
 		]
+
 		*/
 
-		if (is_file('../common/db_credentials_ro.php')) 
-		{
-			require_once  ('../common/db_credentials_ro.php');
+		if (is_file('/home/aveysov/htdocs/common/db_credentials_ro.php')){
+			include '/home/aveysov/htdocs/common/db_credentials_ro.php';
 		} 
-		else {exit("No ../common/db_credentials_ro.php credentials available");}
+		else {
+			exit("No database credentials available");
+		}
 		
 		$query =
 		"
@@ -420,14 +418,12 @@ class companiesGetKontur{
 		$result = pg_query($dbconn, $query);
 		$resultData = '';
 
-		if (!$result) 
-		{
+		if (!$result){
 		  echo "An error occurred.\n";
 		  pg_close($dbconn);
 		  exit;
 		}
-		while ($row = pg_fetch_row($result)) 
-		{
+		while ($row = pg_fetch_row($result)){
 		  $resultData = $resultData . $row[0];
 		}
 		pg_close($dbconn);
@@ -435,12 +431,18 @@ class companiesGetKontur{
 	}	
 	
 	function getRelevantUncheckedCompanies () {
-		if (is_file('../common/db_credentials_ro.php')) 
-		{
-			require  ('../common/db_credentials_ro.php');
+		if (is_file('/home/aveysov/htdocs/common/db_credentials_sandbox_rw.php')){
+			include '/home/aveysov/htdocs/common/db_credentials_sandbox_rw.php';
 		} 
-		else {exit("No ../common/db_credentials_ro.php credentials available");}
-		
+		else {
+			exit("No db_credentials_sandbox_rw.php credentials available");
+		}
+		if (is_file('/home/aveysov/htdocs/common/reports_db_link_ro.php')){
+			include '/home/aveysov/htdocs/common/reports_db_link_ro.php';
+		} 
+		else {
+			exit("No reports_db_link_ro.php credentials available");
+		}
 		$query =
 		"
 		SELECT 
@@ -458,33 +460,36 @@ class companiesGetKontur{
 					klog.company_id as klog_company_id,
 					MAX(klog.query_date_time) as max_time
 				FROM
-				(
-					SELECT DISTINCT
-						com.\"id\" as company_id,
-						com.inn as inn
-					FROM
-						cache_gateway_event cge
-						JOIN hamster h ON cge.hamster_id = h.id
-						JOIN companies com ON h.company_id = com.id
-					WHERE
-						cge.creation_date > now() - interval '12 months' AND com.company_type = 0 AND
-						com.inn NOTNULL AND
-						char_length(com.inn) > 8
-					UNION
-					SELECT DISTINCT
-						com.\"id\" company_id,
-						com.inn as companyinn
-					FROM
-						cache_gateway_event cge
-						JOIN hamster h ON cge.hamster_id = h.id
-						JOIN companies com ON h.company_id = com.id
-					WHERE
-						cge.event_date > now() AND com.company_type = 0 AND 
-						com.inn NOTNULL AND
-						char_length(com.inn) > 8				
-					ORDER BY
-						company_id DESC
-				) coms
+					dblink(
+					'".$dblink."',
+					'
+						SELECT DISTINCT
+							com.\"id\" as company_id,
+							com.inn as inn
+						FROM
+							cache_gateway_event cge
+							JOIN hamster h ON cge.hamster_id = h.id
+							JOIN companies com ON h.company_id = com.id
+						WHERE
+							cge.creation_date > now() - interval ''12 months'' AND com.company_type = 0 AND
+							com.inn NOTNULL AND
+							char_length(com.inn) > 8
+						UNION
+						SELECT DISTINCT
+							com.\"id\" company_id,
+							com.inn as companyinn
+						FROM
+							cache_gateway_event cge
+							JOIN hamster h ON cge.hamster_id = h.id
+							JOIN companies com ON h.company_id = com.id
+						WHERE
+							cge.event_date > now() AND com.company_type = 0 AND 
+							com.inn NOTNULL AND
+							char_length(com.inn) > 8				
+						ORDER BY
+							company_id DESC
+					'
+					) AS coms (company_id INT, inn VARCHAR)
 				LEFT JOIN aveysov.kontur_api_log klog ON klog.company_id = coms.company_id
 				GROUP BY
 					coms.company_id,
@@ -500,14 +505,12 @@ class companiesGetKontur{
 		$result = pg_query($dbconn, $query);
 		$resultData = '';
 
-		if (!$result) 
-		{
+		if (!$result){
 		  echo "An error occurred.\n";
 		  pg_close($dbconn);
 		  exit;
 		}
-		while ($row = pg_fetch_row($result)) 
-		{
+		while ($row = pg_fetch_row($result)){
 		  $resultData = $resultData . $row[0];
 		}
 		pg_close($dbconn);
@@ -515,12 +518,20 @@ class companiesGetKontur{
 	}		
 	
 	function getBalanceUncheckedCompanies () {
-		if (is_file('../common/db_credentials_ro.php')) 
-		{
+		/*
+		Метод неактуальный и не рефакторился. Для работы нужно дописать dblink.
+		*/
+		if (is_file('../common/db_credentials_ro.php')){
 			require ('../common/db_credentials_ro.php');
 		} 
-		else {exit("No ../common/db_credentials_ro.php credentials available");}
-		
+		else {
+			exit("No ../common/db_credentials_ro.php credentials available");
+		}
+
+		/*
+			тут нужен дблинк
+		*/
+
 		$query =
 		"
 		SELECT 
